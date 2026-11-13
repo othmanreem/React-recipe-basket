@@ -1,122 +1,161 @@
-import { useState } from 'react'
-import heroImg from './assets/hero.png'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import './App.css'
+
+import { useState } from "react";
+import RecipeList from "./components/RecipeList.jsx";
+import RecipeForm from "./components/RecipeForm.jsx";
+import ArchiveList from "./components/ArchiveList.jsx";
+import "./App.css";
 
 function App() {
-  const [count, setCount] = useState(0)
+  // Active recipes
+  const [recipes, setRecipes] = useState([
+    {
+      id: 1,
+      name: "Chicken Pasta",
+      ingredients: [
+        { id: 1, name: "Chicken", bought: false },
+        { id: 2, name: "Pasta", bought: false },
+        { id: 3, name: "Cream", bought: false },
+      ],
+    },
+  ]);
+
+  // Archived recipes
+  const [archivedRecipes, setArchivedRecipes] = useState([]);
+
+  // Controls which section is visible
+  const [activeTab, setActiveTab] = useState("recipes");
+
+  // Add a new recipe
+  function addRecipe(name, ingredientNames) {
+    const newRecipe = {
+      id: crypto.randomUUID(),
+      name: name,
+      ingredients: ingredientNames.map((ingredient) => ({
+        id: crypto.randomUUID(),
+        name: ingredient,
+        bought: false,
+      })),
+    };
+
+    setRecipes((previousRecipes) => [
+      ...previousRecipes,
+      newRecipe,
+    ]);
+  }
+
+  // Toggle an ingredient and archive completed recipes
+  function toggleIngredient(recipeId, ingredientId) {
+    const recipe = recipes.find((item) => item.id === recipeId);
+
+    if (!recipe) return;
+
+    const updatedIngredients = recipe.ingredients.map(
+      (ingredient) =>
+        ingredient.id === ingredientId
+          ? { ...ingredient, bought: !ingredient.bought }
+          : ingredient
+    );
+
+    const updatedRecipe = {
+      ...recipe,
+      ingredients: updatedIngredients,
+    };
+
+    const allPurchased =
+      updatedIngredients.length > 0 &&
+      updatedIngredients.every((ingredient) => ingredient.bought);
+
+    if (allPurchased) {
+      // Remove from active recipes
+      setRecipes((previousRecipes) =>
+        previousRecipes.filter((item) => item.id !== recipeId)
+      );
+
+      // Add to archive with timestamp
+      setArchivedRecipes((previousArchived) => [
+        ...previousArchived,
+        {
+          ...updatedRecipe,
+          archivedAt: new Date().toISOString(),
+        },
+      ]);
+    } else {
+      // Update the recipe without archiving
+      setRecipes((previousRecipes) =>
+        previousRecipes.map((item) =>
+          item.id === recipeId ? updatedRecipe : item
+        )
+      );
+    }
+  }
+
+  // Restore a recipe from the archive
+  function restoreRecipe(recipeId) {
+    const recipe = archivedRecipes.find(
+      (item) => item.id === recipeId
+    );
+
+    if (!recipe) return;
+
+    const restoredRecipe = {
+      ...recipe,
+      archivedAt: null,
+      ingredients: recipe.ingredients.map((ingredient) => ({
+        ...ingredient,
+        bought: false,
+      })),
+    };
+
+    setArchivedRecipes((previousArchived) =>
+      previousArchived.filter((item) => item.id !== recipeId)
+    );
+
+    setRecipes((previousRecipes) => [
+      ...previousRecipes,
+      restoredRecipe,
+    ]);
+  }
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
+    <div className="app">
+      <h1>Recipe Basket</h1>
+      <p>Manage your recipes and shopping ingredients</p>
+
+      <div className="tabs">
         <button
           type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
+          className={activeTab === "recipes" ? "active" : ""}
+          onClick={() => setActiveTab("recipes")}
         >
-          Count is {count}
+          Active Recipes ({recipes.length})
         </button>
-      </section>
 
-      <div className="ticks"></div>
+        <button
+          type="button"
+          className={activeTab === "archive" ? "active" : ""}
+          onClick={() => setActiveTab("archive")}
+        >
+          Archive ({archivedRecipes.length})
+        </button>
+      </div>
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+      {activeTab === "recipes" ? (
+        <>
+          <RecipeForm onAddRecipe={addRecipe} />
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+          <RecipeList
+            recipes={recipes}
+            onToggleIngredient={toggleIngredient}
+          />
+        </>
+      ) : (
+        <ArchiveList
+          archivedRecipes={archivedRecipes}
+          onRestore={restoreRecipe}
+        />
+      )}
+    </div>
+  );
 }
 
-export default App
+export default App;
